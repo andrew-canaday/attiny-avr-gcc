@@ -45,6 +45,7 @@ vars: ## Print relevant environment vars
 	@printf  "%-20.20s%s\n"  "OPTIMIZATION:"   "$(OPTIMIZATION)"
 	@printf  "%-20.20s%s\n"  "AVRCC:"          "$(AVRCC)"
 	@printf  "%-20.20s%s\n"  "AVRDUDE:"        "$(AVRDUDE)"
+	@printf  "%-20.20s%s\n"  "AVRDUDE_OPTS:"   "$(AVRDUDE_OPTS)"
 	@printf  "%-20.20s%s\n"  "AVR_SIZE:"       "$(AVR_SIZE)"
 	@printf  "%-20.20s%s\n"  "AVR_OBJCOPY:"    "$(AVR_OBJCOPY)"
 	@printf  "%-20.20s%s\n"  "DEVICE:"         "$(DEVICE)"
@@ -101,7 +102,7 @@ link: compile ## Link compilation artifacts and package for upload
 	    -R .eeprom \
 	    $(BUILDTMP)/$(SRC_MAIN).elf \
 	    $(BUILDTMP)/$(SRC_MAIN).hex
-	$(AVRSIZE) \
+	$(AVR_SIZE) \
 	    -A $(BUILDTMP)/$(SRC_MAIN).elf
 
 upload: link ## Upload (NOTE: USBDEVICE must be set)
