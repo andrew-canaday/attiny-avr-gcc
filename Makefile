@@ -8,7 +8,7 @@ MKFILE_ABSDIR := $(abspath $(MKFILE_DIR))
 
 BUILDTMP ?= $(MKFILE_DIR)/build-tmp
 
-OPTIMIZATION ?= -Ofast
+OPTIMIZATION ?= -Os
 AVRCC        ?= avr-gcc
 AVRDUDE      ?= avrdude
 AVR_SIZE     ?= avr-size
