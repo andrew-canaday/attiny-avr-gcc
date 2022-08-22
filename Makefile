@@ -6,7 +6,6 @@ MKFILE_DIR := $(notdir $(patsubst %/,%,$(dir $(MKFILE_PATH))))
 MKFILE_ABSDIR := $(abspath $(MKFILE_DIR))
 
 
-MAINTMP  ?= $(shell mktemp ).$(MAIN_SUFFIX)
 BUILDTMP ?= $(MKFILE_DIR)/build-tmp
 
 OPTIMIZATION ?= -Ofast
@@ -40,7 +39,6 @@ vars: ## Print relevant environment vars
 	@printf  "%-20.20s%s\n"  "MKFILE_PATH:"    "$(MKFILE_PATH)"
 	@printf  "%-20.20s%s\n"  "MKFILE_DIR:"     "$(MKFILE_DIR)"
 	@printf  "%-20.20s%s\n"  "MKFILE_ABSDIR:"  "$(MKFILE_ABSDIR)"
-	@printf  "%-20.20s%s\n"  "MAINTMP:"        "$(MAINTMP)"
 	@printf  "%-20.20s%s\n"  "BUILDTMP:"       "$(BUILDTMP)"
 	@printf  "%-20.20s%s\n"  "OPTIMIZATION:"   "$(OPTIMIZATION)"
 	@printf  "%-20.20s%s\n"  "AVRCC:"          "$(AVRCC)"
