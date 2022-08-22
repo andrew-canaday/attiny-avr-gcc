@@ -86,7 +86,7 @@ link: compile ## Link compilation artifacts and package for upload
 	    -o $(BUILDTMP)/$(SRC_MAIN).elf \
 	    $(BUILDTMP)/$(SRC_MAIN).o \
 	    -L$(BUILDTMP) \
-	    -lm
+	    $(LDFLAGS)
 	$(AVR_OBJCOPY) \
 	    -O ihex \
 	    -j .eeprom \
