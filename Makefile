@@ -122,6 +122,7 @@ ifndef USBDEVICE
 	$(error 'USBDEVICE not defined! Please set USBDEVICE env var!')
 endif # USBDEVICE
 	$(AVRDUDE) \
+	    $(AVRDUDE_OPTS) \
 	    -v \
 	    -v \
 	    -v \
