@@ -8,7 +8,7 @@ For target information: `make help`
 
 #### :warning: NOTES
 
- - The `bootloader` target has hard-coded fuse values (TODO).
+ - The `fuses` target has hard-coded fuse values (TODO).
  - If you have more than one source file, you'll want to update the `compile` target dependencies.
 
 Example

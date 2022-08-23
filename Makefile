@@ -1,4 +1,4 @@
-.PHONY: vars help clean compile link upload bootloader 
+.PHONY: vars help clean compile link upload fuses
 
 # Hack to get the directory this makefile is in:
 MKFILE_PATH := $(lastword $(MAKEFILE_LIST))
@@ -117,7 +117,7 @@ endif # USBDEVICE
 	    -Uflash:w:$(BUILDTMP)/$(SRC_MAIN).hex:i
 
 
-bootloader: ## Flash the bootloader
+fuses: ## Flash the fuses
 ifndef USBDEVICE
 	$(error 'USBDEVICE not defined! Please set USBDEVICE env var!')
 endif # USBDEVICE
