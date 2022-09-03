@@ -1,23 +1,37 @@
-.PHONY: vars help clean compile link upload fuses
+.PHONY: vars help clean compile link upload fuses check-fuses
 
 # Hack to get the directory this makefile is in:
-MKFILE_PATH := $(lastword $(MAKEFILE_LIST))
-MKFILE_DIR := $(notdir $(patsubst %/,%,$(dir $(MKFILE_PATH))))
+MKFILE_PATH   := $(lastword $(MAKEFILE_LIST))
+MKFILE_DIR    := $(notdir $(patsubst %/,%,$(dir $(MKFILE_PATH))))
 MKFILE_ABSDIR := $(abspath $(MKFILE_DIR))
 
+# Hack to get all *.h files into compile dependencies:
+HEADERS        = $(shell find $(MKFILE_DIR) -name "*.h")
 
-BUILDTMP ?= $(MKFILE_DIR)/build-tmp
 
-OPTIMIZATION ?= -Os
-AVRCC        ?= avr-gcc
-AVRDUDE      ?= avrdude
-AVR_SIZE     ?= avr-size
-AVR_OBJCOPY  ?= avr-objcopy
-DEVICE       ?= attiny85
-CLOCK        ?= 8000000L
-PROGRAMMER   ?= stk500v1
-BAUD         ?= 19200
-SRC_MAIN     ?= main.c
+BUILDTMP         ?= $(MKFILE_DIR)/build-tmp
+OPTIMIZATION     ?= -Os
+AVRCC            ?= avr-gcc
+AVRDUDE          ?= avrdude
+#---------------------------------------------------------
+# AVRDUDE_FLASHARG:
+# This preserves the chip memory when updating the fuses.
+# To erase the chip when setting fuses, do:
+#
+#     make AVRDUDE_FLASHARG=-e fuses
+#
+AVRDUDE_FLASHARG ?= -D
+#---------------------------------------------------------
+AVR_SIZE         ?= avr-size
+AVR_OBJCOPY      ?= avr-objcopy
+DEVICE           ?= attiny85
+CLOCK            ?= 8000000L
+PROGRAMMER       ?= stk500v1
+BAUD             ?= 19200
+UNIT             ?= main.c
+FUSE_EXT         ?= 0xff
+FUSE_HIGH        ?= 0xdf
+FUSE_LOW         ?= 0xe2
 
 # Misc target info:
 help_spacing  := 12
@@ -50,7 +64,7 @@ vars: ## Print relevant environment vars
 	@printf  "%-20.20s%s\n"  "CLOCK:"          "$(CLOCK)"
 	@printf  "%-20.20s%s\n"  "PROGRAMMER:"     "$(PROGRAMMER)"
 	@printf  "%-20.20s%s\n"  "BAUD:"           "$(BAUD)"
-	@printf  "%-20.20s%s\n"  "SRC_MAIN:"       "$(SRC_MAIN)"
+	@printf  "%-20.20s%s\n"  "UNIT:"           "$(UNIT)"
 
 help: ## Print this makefile help menu
 	@echo "TARGETS:"
@@ -59,12 +73,17 @@ help: ## Print this makefile help menu
 		| sed 's/^\([a-z_\-]\{1,\}\): *## *\(.*\)/\1:\t\2/g' \
 		| awk '{$$1 = sprintf("%-$(help_spacing)s", $$1)} 1' \
 		| sed 's/^/  /'
+	@printf "\nUsage:\n    make \\ \n    %s \\ \n    %s \\ \n    %s \\ \n    %s\n" \
+		"USBDEVICE=/dev/cu.usbserial-1234" \
+		"UNIT=my_source.c" \
+		"DEVICE=<mcu>" \
+		"<make target>"
 
 clean: ## Clean build artifacts
 	rm -rf $(BUILDTMP)/*
 	rm -vf *.s
 
-compile: $(SRC_MAIN) ## Compile project
+compile: $(UNIT) $(HEADERS) ## Compile project
 	$(AVRCC) \
 	     -c \
 	     -Wall \
@@ -72,8 +91,8 @@ compile: $(SRC_MAIN) ## Compile project
 	     -DF_CPU=$(CLOCK) \
 	     -mmcu=$(DEVICE) \
 	     -I$(MKFILE_DIR) \
- 	     $(SRC_MAIN) \
-	     -o $(BUILDTMP)/$(SRC_MAIN).o
+ 	     $(UNIT) \
+	     -o $(BUILDTMP)/$(UNIT).o
 
 link: compile ## Link compilation artifacts and package for upload
 	$(AVRCC) \
@@ -83,8 +102,8 @@ link: compile ## Link compilation artifacts and package for upload
 	    -fuse-linker-plugin \
 	    -Wl,--gc-sections \
 	    -mmcu=$(DEVICE) \
-	    -o $(BUILDTMP)/$(SRC_MAIN).elf \
-	    $(BUILDTMP)/$(SRC_MAIN).o \
+	    -o $(BUILDTMP)/$(UNIT).elf \
+	    $(BUILDTMP)/$(UNIT).o \
 	    -L$(BUILDTMP) \
 	    $(LDFLAGS)
 	$(AVR_OBJCOPY) \
@@ -93,15 +112,15 @@ link: compile ## Link compilation artifacts and package for upload
 	    --set-section-flags=.eeprom=alloc,load \
 	    --no-change-warnings \
 	    --change-section-lma .eeprom=0 \
-	    $(BUILDTMP)/$(SRC_MAIN).elf \
-	    $(BUILDTMP)/$(SRC_MAIN).eep
+	    $(BUILDTMP)/$(UNIT).elf \
+	    $(BUILDTMP)/$(UNIT).eep
 	$(AVR_OBJCOPY) \
 	    -O ihex \
 	    -R .eeprom \
-	    $(BUILDTMP)/$(SRC_MAIN).elf \
-	    $(BUILDTMP)/$(SRC_MAIN).hex
+	    $(BUILDTMP)/$(UNIT).elf \
+	    $(BUILDTMP)/$(UNIT).hex
 	$(AVR_SIZE) \
-	    -A $(BUILDTMP)/$(SRC_MAIN).elf
+	    -A $(BUILDTMP)/$(UNIT).elf
 
 upload: link ## Upload (NOTE: USBDEVICE must be set)
 ifndef USBDEVICE
@@ -114,7 +133,7 @@ endif # USBDEVICE
 	    -c$(PROGRAMMER) \
 	    -P$(USBDEVICE) \
 	    -b$(BAUD) \
-	    -Uflash:w:$(BUILDTMP)/$(SRC_MAIN).hex:i
+	    -Uflash:w:$(BUILDTMP)/$(UNIT).hex:i
 
 
 fuses: ## Flash the fuses
@@ -124,25 +143,19 @@ endif # USBDEVICE
 	$(AVRDUDE) \
 	    $(AVRDUDE_OPTS) \
 	    -v \
-	    -v \
-	    -v \
-	    -v \
+	    -D \
 	    -p$(DEVICE) \
 	    -c$(PROGRAMMER) \
 	    -P$(USBDEVICE) \
 	    -b$(BAUD) \
-	    -e \
-	    -Uefuse:w:0xff:m \
-	    -Uhfuse:w:0xdf:m \
-	    -Ulfuse:w:0xe2:m
+	    -Uefuse:w:$(FUSE_EXT):m \
+	    -Uhfuse:w:$(FUSE_HIGH):m \
+	    -Ulfuse:w:$(FUSE_LOW):m
+
+check-fuses: ## Verify device signature and check fuse values
 	$(AVRDUDE) \
 	    $(AVRDUDE_OPTS) \
-	    -v \
-	    -v \
-	    -v \
-	    -v \
 	    -p$(DEVICE) \
 	    -c$(PROGRAMMER) \
 	    -P$(USBDEVICE) \
 	    -b$(BAUD)
-
