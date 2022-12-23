@@ -1,4 +1,12 @@
-.PHONY: vars help clean compile link upload fuses check-fuses
+.PHONY: \
+	vars \
+	help \
+	clean \
+	compile \
+	link \
+	upload \
+	fuses \
+	check-fuses
 
 # Hack to get the directory this makefile is in:
 MKFILE_PATH   := $(lastword $(MAKEFILE_LIST))
